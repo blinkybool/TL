@@ -23,7 +23,7 @@ inductive term : type → Type
 | all  : Π A : type, term Ω → term Ω
 | ex   : Π A : type, term Ω → term Ω
 
-export term
+open term
 
 infix `∶` :max :=  var -- input \:
 
@@ -101,6 +101,22 @@ def FV : Π {A : type}, term A → finset ℕ
 | _ (p ⟹ q)  := FV p ∪ FV q
 | _ (∀' A φ)   := ((FV φ).erase 0).image nat.pred
 | _ (∃' A φ)   := ((FV φ).erase 0).image nat.pred
+
+def context := list type
+
+def WF : Π A : type, term A → context → Prop
+| _ (var n A) Γ  := Γ.nth n = some A
+| _ (comp A φ) Γ := WF Ω φ (A :: Γ)
+| _ (∀' A φ) Γ   := WF Ω φ (A :: Γ)
+| _ (∃' A φ) Γ   := WF Ω φ (A :: Γ)
+| _ ⁎ Γ          := true
+| _ top Γ        := true
+| _ bot Γ        := true
+| _ (prod a b) Γ := WF _ a Γ ∧ WF _ b Γ
+| _ (a ∈ α) Γ    := WF _ a Γ ∧ WF _ α Γ
+| _ (p ∧' q) Γ   := WF _ p Γ ∧ WF _ q Γ
+| _ (p ∨' q) Γ   := WF _ p Γ ∧ WF _ q Γ
+| _ (p ⟹ q) Γ  := WF _ p Γ ∧ WF _ q Γ
 
 inductive entX : finset ℕ → term Ω → term Ω → Type
 | axm                {Γ p} : entX Γ p p
