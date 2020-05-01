@@ -9,23 +9,52 @@ notation `𝟙` := type.One
 infix `××` :100 := type.Prod
 prefix 𝒫 :101 := type.Pow
 
-inductive term : type → Type
-| var  : ℕ → Π A : type, term A
-| star : term 𝟙
-| top  : term Ω
-| bot  : term Ω
-| prod : Π {A B : type}, term A → term B → term (A ×× B)
-| elem : Π {A : type}, term A → term (𝒫 A) → term Ω
-| comp : Π A : type, term Ω → term (𝒫 A)
-| and  : term Ω → term Ω → term Ω
-| or   : term Ω → term Ω → term Ω
-| imp  : term Ω → term Ω → term Ω
-| all  : Π A : type, term Ω → term Ω
-| ex   : Π A : type, term Ω → term Ω
+def context := list type
+
+inductive term : context → type → Type
+-- _eq is temporary
+-- | _eq  (Γ) : Π A : type, term Γ A → term Γ A → term Γ Ω
+| var (Γ A Δ) : term (list.append Γ (A :: Δ)) A
+| comp (Γ) : Π A : type, term (A::Γ) Ω → term Γ (𝒫 A)
+| all  (Γ) : Π A : type, term (A::Γ) Ω → term Γ Ω
+| ex   (Γ) : Π A : type, term (A::Γ) Ω → term Γ Ω
+| star (Γ) : term Γ 𝟙
+| top  (Γ) : term Γ Ω
+| bot  (Γ) : term Γ Ω
+| prod (Γ) : Π {A B : type}, term Γ A → term Γ B → term Γ (A ×× B)
+| elem (Γ) : Π {A : type}, term Γ A → term Γ (𝒫 A) → term Γ Ω
+| and  (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
+| or   (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
+| imp  (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
 
 open term
 
-infix `∶` :max :=  var -- input \:
+-- def mod_context (Δ : context) (A: type): Π (Γ: context), ℕ → term (list.append Γ) A → term (list.append Γ (F::Δ)) A
+-- | (Γ) (n) (all _)
+
+-- x == y
+-- def x_eq_y
+--   := _eq [𝟙,Ω,𝟙] 𝟙 (var [𝟙,Ω] 𝟙 []) (var [] 𝟙 [Ω,𝟙])
+
+-- -- (∀ y ∈ 𝟙) x == y
+-- def forall_y_x_eq_y
+--   := all [Ω,𝟙] 𝟙 x_eq_y
+
+-- -- p ∨ (∀ y ∈ 𝟙) x == y
+-- def p_or_forall_y_x_eq_y
+--   := or [Ω, 𝟙] (var [] Ω [𝟙]) forall_y_x_eq_y
+
+-- -- (∀ p ∈ Ω) (p ∨ (∀ y ∈ 𝟙) x == y)
+-- def forall_p_p_or_forall_y_x_eq_y
+--   := all [𝟙] Ω p_or_forall_y_x_eq_y
+
+-- -- (∀ x ∈ 𝟙) (∀ p ∈ Ω) (p ∨ (∀ y ∈ 𝟙) x == y)
+-- def forall_x_forall_p_p_or_forall_y_x_eq_y
+--   := all [] 𝟙 forall_p_p_or_forall_y_x_eq_y
+
+-- #check forall_x_forall_p_p_or_forall_y_x_eq_y
+
+-- infix `∶` :max :=  var -- input \:
 
 notation `⁎` := star    -- input \asterisk
 notation `⊤` := top     --       \top
@@ -44,7 +73,7 @@ notation `<` a `,` b `>` := prod a b
 
 notation a ∈ α := elem a α
 notation a ∉ α := ∼ (elem a α)
-notation `[` A | φ `]` := comp A φ
+notation `[` A `|` φ `]` := comp A φ
 
 notation `∀'` := all 
 notation `∃'` := ex 
@@ -102,7 +131,7 @@ def FV : Π {A : type}, term A → finset ℕ
 | _ (∀' A φ)   := ((FV φ).erase 0).image nat.pred
 | _ (∃' A φ)   := ((FV φ).erase 0).image nat.pred
 
-def context := list type
+∀ A ∀ A ((var 0 A) = (var 1 B))
 
 def WF : Π A : type, term A → context → Prop
 | _ (var n A) Γ  := Γ.nth n = some A
