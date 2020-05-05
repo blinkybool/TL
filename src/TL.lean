@@ -12,39 +12,47 @@ prefix 𝒫 :101 := type.Pow
 def context := list type
 
 inductive term : context → type → Type
--- _eq is temporary
--- | _eq  (Γ) : Π A : type, term Γ A → term Γ A → term Γ Ω
-| var (Γ A Δ) : term (list.append Γ (A :: Δ)) A
-| comp (Γ) : Π A : type, term (A::Γ) Ω → term Γ (𝒫 A)
-| all  (Γ) : Π A : type, term (A::Γ) Ω → term Γ Ω
-| ex   (Γ) : Π A : type, term (A::Γ) Ω → term Γ Ω
-| star (Γ) : term Γ 𝟙
-| top  (Γ) : term Γ Ω
-| bot  (Γ) : term Γ Ω
-| prod (Γ) : Π {A B : type}, term Γ A → term Γ B → term Γ (A ×× B)
-| elem (Γ) : Π {A : type}, term Γ A → term Γ (𝒫 A) → term Γ Ω
-| and  (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
-| or   (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
-| imp  (Γ) : term Γ Ω → term Γ Ω → term Γ Ω
+| var (Γ A Δ) : term (list.append Γ (A::Δ)) A
+| comp {Γ} : Π A : type, term (A::Γ) Ω → term Γ (𝒫 A)
+| all  {Γ} : Π A : type, term (A::Γ) Ω → term Γ Ω
+| ex   {Γ} : Π A : type, term (A::Γ) Ω → term Γ Ω
+| star {Γ} : term Γ 𝟙
+| top  {Γ} : term Γ Ω
+| bot  {Γ} : term Γ Ω
+| prod {Γ} : Π {A B : type}, term Γ A → term Γ B → term Γ (A ×× B)
+| elem {Γ} : Π {A : type}, term Γ A → term Γ (𝒫 A) → term Γ Ω
+| and  {Γ} : term Γ Ω → term Γ Ω → term Γ Ω
+| or   {Γ} : term Γ Ω → term Γ Ω → term Γ Ω
+| imp  {Γ} : term Γ Ω → term Γ Ω → term Γ Ω
+| fake_eq {Γ} : Π (A : type), term Γ A → term Γ A → term Γ Ω
 
 open term
 
--- def mod_context (Δ : context) (A: type): Π (Γ: context), ℕ → term (list.append Γ) A → term (list.append Γ (F::Δ)) A
--- | (Γ) (n) (all _)
+-- def add_junk (β : context) : Π (Γ: context) (A: type), term Γ A → term (list.append Γ β) A
+-- | (list.append Γ (A::Δ)) (A) (var Γ A Δ) := var Γ A (list.append Δ β)
 
--- x == y
+-- #check var [𝟙,Ω] 𝟙 []
+-- #check var [] 𝟙 [Ω,𝟙]
+
+-- -- x == y
 -- def x_eq_y
---   := _eq [𝟙,Ω,𝟙] 𝟙 (var [𝟙,Ω] 𝟙 []) (var [] 𝟙 [Ω,𝟙])
+--   := fake_eq 𝟙 (var [𝟙,Ω] 𝟙 []) (var [] 𝟙 [Ω,𝟙])
 
--- -- (∀ y ∈ 𝟙) x == y
+-- #check x_eq_y
+
+-- -- x == y
+-- def x_eq_y
+--   := fake_eq [𝟙,Ω,𝟙] 𝟙 (var [𝟙,Ω] 𝟙 []) (var [] 𝟙 [Ω,𝟙])
+
+-- -- -- (∀ y ∈ 𝟙) x == y
 -- def forall_y_x_eq_y
 --   := all [Ω,𝟙] 𝟙 x_eq_y
 
--- -- p ∨ (∀ y ∈ 𝟙) x == y
+-- -- -- p ∨ (∀ y ∈ 𝟙) x == y
 -- def p_or_forall_y_x_eq_y
 --   := or [Ω, 𝟙] (var [] Ω [𝟙]) forall_y_x_eq_y
 
--- -- (∀ p ∈ Ω) (p ∨ (∀ y ∈ 𝟙) x == y)
+-- -- -- (∀ p ∈ Ω) (p ∨ (∀ y ∈ 𝟙) x == y)
 -- def forall_p_p_or_forall_y_x_eq_y
 --   := all [𝟙] Ω p_or_forall_y_x_eq_y
 
