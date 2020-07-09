@@ -1,67 +1,58 @@
-import TL
+import definitions
 import category
+import entails
 
 namespace TT
+open entails
+
+def entails_eq (A : type) (a₁ a₂ : tset A) := ⊨ (a₁ ≃ a₂)
+
+section equivalence_relation
 
   variable A : type
 
-  def proof_eq (a₁ a₂ : tset A) := ⊨ (a₁ ≃[A] a₂)
+  theorem entails_eq_refl : reflexive (entails_eq A) :=
+  by intro; apply_rules [all_intro, and_intro, to_imp, axm, WF_rules]; refl
 
-  section equivalence_relation
-
-  theorem proof_eq_refl : reflexive (proof_eq A) :=
-  begin
-    intro a,
-    unfold proof_eq,
-    apply proof.all_intro 𝒫 A,
-    apply proof.and_intro,
-    all_goals {
-        apply to_imp,
-        apply proof.axm,
-        apply_rules WF_rules,
-        apply WF.lift,
-        exact a.property,
-        refl
-      }
-  end
-
-  theorem proof_eq_symm : symmetric (proof_eq A) :=
+  theorem entails_eq_symm : symmetric (entails_eq A) :=
   begin
     intros a₁ a₂ H,
-    apply proof.all_intro 𝒫 A,
-    apply proof.and_intro,
-    apply proof.and_right _ ((↑a₁ ∈ 𝟘) ⟹ (↑a₂ ∈ 𝟘)) _,
-    apply proof.all_elim, sorry,
+    apply entails.all_intro,
+    apply entails.and_intro,
+    apply entails.and_right _ ((↑a₁ ∈ ↑0) ⟹ (↑a₂ ∈ ↑0)) _,
+    apply entails.all_elim, sorry,
     -- exact H,
-    apply proof.and_left _ _ ((↑a₂ ∈ 𝟘) ⟹ (↑a₁ ∈ 𝟘)),
-    apply proof.all_elim,
+    apply entails.and_left _ _ ((↑a₂ ∈ ↑0) ⟹ (↑a₁ ∈ ↑0)),
+    apply entails.all_elim,
     sorry,
     -- exact H,
   end
 
-  theorem proof_eq_trans : transitive (proof_eq A) := sorry
+  theorem entails_eq_trans : transitive (entails_eq A) := sorry
 
-  theorem proof_eq_equiv : equivalence (proof_eq A) :=
-    ⟨proof_eq_refl A, proof_eq_symm A, proof_eq_trans A⟩
+  theorem entails_eq_equiv : equivalence (entails_eq A) :=
+    ⟨entails_eq_refl A, entails_eq_symm A, entails_eq_trans A⟩
 
-  end equivalence_relation
+end equivalence_relation
 
-  definition TT.setoid : setoid (closed_term A) := 
-    {r := proof_eq A, iseqv := proof_eq_equiv A}
+section setoid
 
-  #check TT.setoid
+  def TT.setoid (A : type) : setoid (tset A) := 
+    {r := entails_eq A, iseqv := entails_eq_equiv A}
 
   local attribute [instance] TT.setoid
 
-  def tset := quotient (TT.setoid (𝒫 A))
+  variable A : type
 
-  def to_tset := quot.mk (proof_eq (𝒫 A))
+  def tsetoid := quotient (TT.setoid A)
 
-  def coe_term_tset : has_coe (closed_term 𝒫 A) (tset A) := ⟨to_tset A⟩
-  local attribute [instance] coe_term_tset
+  def to_tsetoid := quot.mk (entails_eq A)
 
-  def elem_maker {A : type} (a : closed_term A) : tset A → Prop :=
-    quotient.lift (λ α : closed_term (𝒫 A), ⊨ a ∈ α) (begin
+  def coe_tset_tsetoid : has_coe (tset A) (tsetoid A) := ⟨to_tsetoid A⟩
+  local attribute [instance] coe_tset_tsetoid
+
+  def elem_maker {A : type} (a : term) (wf : WF [] A a) : tsetoid A → Prop :=
+    quotient.lift (λ α : tset A, ⊨ a ∈ α) (begin
       intros α₁ α₂ heq,
       simp,
       constructor,
@@ -70,27 +61,30 @@ namespace TT
       sorry, sorry
     end)
     
-  def tset.star_singleton : tset Unit :=
-    by {apply to_tset, apply closed_term.mk _ ⟦Unit | ⊤⟧, apply WF.comp, exact WF.top}
+  def tset.star_singleton : tsetoid 𝟙 :=
+    by {apply to_tsetoid, apply tset.mk _ ⟦𝟙 | ⊤⟧, apply WF.comp, exact WF.top}
 
+end setoid
+
+section
 
   variables {A B : type}
 
-  def AB_setoid : setoid (closed_term (𝒫 (A ×× B))) := TT.setoid (𝒫 (A ×× B))
+  def AB_setoid : setoid (tset (A 𝕏 B)) := TT.setoid (A 𝕏 B)
 
   local attribute [instance] AB_setoid
 
-  def term_is_subset_of_terms {A B : type} (α : closed_term 𝒫 A) (β : closed_term 𝒫 B) (F : closed_term 𝒫 (A××B)) : Prop :=
-    ⊨ F ⊆[𝒫 A] (@term_prod A B α β)
-
-  def lifted_is_subset_of_terms {A B : type} : tset A → tset B → tset (A ×× B) → Prop := 
+  def lifted_is_subset_of_terms {A B : type} : tset A → tset B → tsetoid (A 𝕏 B) → Prop := 
     λ α β, (
-      quotient.lift  (λ F : closed_term (𝒫 (A ×× B)), term_is_subset_of_terms α β F) (begin
-        intros F₁ F₂ heq,
-        simp,
-        unfold term_is_subset_of_terms,
-        constructor; sorry
-      end)
+      quotient.lift 
+        (λ F : tset (A 𝕏 B), ⊨ F ⊆ α 𝕏 β)
+        (begin
+          intros F₁ F₂ heq,
+          simp,
+          constructor; sorry
+        end)
     )
+
+end
 
 end TT
