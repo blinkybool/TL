@@ -12,23 +12,13 @@ section equivalence_relation
   variable A : type
 
   theorem entails_eq_refl : reflexive (entails_eq A) :=
-  by intro; apply_rules [all_intro, and_intro, to_imp, axm, WF_rules]; refl
+    λ α, by { apply intro_eq, any_goals {WF_prover}, apply entails.all_intro, refine entails.iff_refl; WF_prover; refl}
 
   theorem entails_eq_symm : symmetric (entails_eq A) :=
-  begin
-    intros a₁ a₂ H,
-    apply entails.all_intro,
-    apply entails.and_intro,
-    apply entails.and_right _ ((↑a₁ ∈ ↑0) ⟹ (↑a₂ ∈ ↑0)) _,
-    apply entails.all_elim, sorry,
-    -- exact H,
-    apply entails.and_left _ _ ((↑a₂ ∈ ↑0) ⟹ (↑a₁ ∈ ↑0)),
-    apply entails.all_elim,
-    sorry,
-    -- exact H,
-  end
+    λ α β ent_eq, by {apply all_intro, apply entails.and_comm, apply all_elim, assumption}
 
-  theorem entails_eq_trans : transitive (entails_eq A) := sorry
+  theorem entails_eq_trans : transitive (entails_eq A) :=
+    λ α β θ ent_αβ ent_βθ, all_intro $ iff_trans (^↑β ∈ ↑0) (all_elim ent_αβ) (all_elim ent_βθ)
 
   theorem entails_eq_equiv : equivalence (entails_eq A) :=
     ⟨entails_eq_refl A, entails_eq_symm A, entails_eq_trans A⟩
@@ -50,16 +40,6 @@ section setoid
 
   def coe_tset_tsetoid : has_coe (tset A) (tsetoid A) := ⟨to_tsetoid A⟩
   local attribute [instance] coe_tset_tsetoid
-
-  def elem_maker {A : type} (a : term) (wf : WF [] A a) : tsetoid A → Prop :=
-    quotient.lift (λ α : tset A, ⊨ a ∈ α) (begin
-      intros α₁ α₂ heq,
-      simp,
-      constructor,
-      intro h,
-
-      sorry, sorry
-    end)
     
   def tset.star_singleton : tsetoid 𝟙 :=
     by {apply to_tsetoid, apply tset.mk _ ⟦𝟙 | ⊤⟧, apply WF.comp, exact WF.top}
@@ -68,7 +48,7 @@ end setoid
 
 section
 
-  variables {A B : type}
+
 
   def AB_setoid : setoid (tset (A 𝕏 B)) := TT.setoid (A 𝕏 B)
 

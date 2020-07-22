@@ -5,11 +5,15 @@ Author: Billy Price
 -/
 import category_theory.category
 import definitions
-import lemmas
+import wellformedness
+import entails
 
 
 
 namespace TT
+
+open entails
+
 
 /-! ### tset -/
 
@@ -43,6 +47,14 @@ namespace TT
   def tset_prod {A B} (α : tset A) (β : tset B) : tset (A 𝕏 B)
     := tset.mk (A 𝕏 B) (term_prod A B α β) (by WF_prover;refl)
   infix ` 𝕏 ` := tset_prod
+
+  @[simp]
+  def elem_tset_prod {Γ} {H} {A B} {wfH : WF (A 𝕏 B :: Γ) Ω H} {α : tset A} {β : tset B} : entails ((A 𝕏 B) :: Γ) H ((term.var 0) ∈ ^ (α 𝕏 β)) ↔ entails ((A 𝕏 B) :: Γ) H (∃[A,B] ((↑1 ∈ α) ⋀ (↑0 ∈ β) ⋀ (↑2 ≃[A 𝕏 B] ⟪↑1,↑0⟫))) :=
+  begin
+    rw entails.to_meta_iff,
+    apply add_hyp, WF_prover,
+    convert all_elim (comp _); WF_prover; refl
+  end
 
 
 /-! ### graph -/
@@ -92,14 +104,28 @@ section
   def graph.is_functional {A B α β} (F :@graph A B α β)
     : ⊨ (∀' A ((↑0 ∈ α) ⟹ (∃!' B $ ⟪↑1,↑0⟫ ∈ F))) := (F.property).2
 
-  -- the identity graph
-  def diagonal {A} (α : tset A) : graph α α :=
-    ( graph.mk 
-      ( tset.mk (A 𝕏 A) ⟦ A 𝕏 A | ∃' A (↑1 ≃[A 𝕏 A] ⟪↑0,↑0⟫) ⟧
-        (by apply_rules [WF_rules, WF.closed_add_context];refl)
-      )
-    ) 
-    (by sorry)
+
+  -- -- the identity graph
+  -- def diagonal {A} (α : tset A) : graph α α :=
+  --   ( graph.mk 
+  --     ( tset.mk (A 𝕏 A) ⟦ A 𝕏 A | ∃' A (↑1 ≃[A 𝕏 A] ⟪↑0,↑0⟫) ⟧
+  --       (by apply_rules [WF_rules, WF.closed_add_context];refl)
+  --     )
+  --   ) (sorry)
+    -- (by { 
+    --   split,
+    --     { apply all_intro,
+    --       simp,
+    --       rw imp_iff_ent,
+    --       -- apply cut (∃' A (↑1 ≃[A 𝕏 A] ⟪↑0,↑0⟫)⁅↑0⁆),
+    --       -- rw ←elem_iff_spec,
+    --       -- apply axm,
+    --       -- any_goals {WF_prover;refl},
+    --       -- simp,
+    --       -- apply ex_intro,
+    --       sorry },
+        
+    --   } )
 
 end
 
@@ -117,12 +143,10 @@ section
   def composition_term (F : graph α β) (G : graph β η) : term :=
     ⟦ A 𝕏 C | -- all d : A × C such that
               ∃[A,C] -- ∃ a c,
-              (
-                (↑2 ≃[A 𝕏 C] ⟪↑1,↑0⟫) -- d = ⟨a,c⟩
+              ( (↑2 ≃[A 𝕏 C] ⟪↑1,↑0⟫) -- d = ⟨a,c⟩
                 ⋀
-                (∃' B ((⟪↑2,↑0⟫ ∈ F) ⋀ (⟪↑0, ↑1⟫ ∈ G))) -- ∃ b, ⟨a,b⟩ ∈ F ∧ ⟨b,c⟩ ∈ G
-              )
-    ⟧
+                (∃' B ((⟪↑2,↑0⟫ ∈ F) ⋀ (⟪↑0, ↑1⟫ ∈ G))) ) ⟧ -- ∃ b, ⟨a,b⟩ ∈ F ∧ ⟨b,c⟩ ∈ G
+
   
   /- The composition construction is a well-formed term -/
   @[WF_rules]
@@ -133,7 +157,22 @@ section
   Note we define F ∘ G as what would usually be G ∘ F (this is just the Lean convention) -/
   def composition (F : graph α β) (G : graph β η) : graph α η :=
     (graph.mk (tset.mk (A 𝕏 C) (composition_term F G) (WF.composition F G)))
-    (by sorry)
+    (begin
+      split,
+      apply all_intro,
+      simp,
+      rw imp_iff_ent,
+      convert (hyp_of_iff _ _ (all_elim (comp _))).2 _,
+      WF_prover;refl, simp,
+      rw elem_tset_prod, simp,
+      
+
+
+
+
+
+    
+    end)
 
   /- (F ∘ G) ∘ H ≃ F ∘ (G ∘ H) -/
   def associativity (F : graph α β) (G : graph β η) (H : graph η δ) :
