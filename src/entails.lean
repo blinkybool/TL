@@ -22,6 +22,12 @@ lemma absurd {wfp : WF Γ Ω p}: entails Γ H ⊥ → entails Γ H p :=
 lemma add_hyp : WF Γ Ω H → entails Γ ⊤ p → entails Γ H p :=
   λ wfH entp, cut ⊤ (vac wfH) entp
 
+lemma and_hyp_right : WF Γ Ω H → entails Γ K p → entails Γ (H ⋀ K) p :=
+  λ wfH entp, by refine cut K (and_right (axm _)) entp; WF_prover
+
+lemma and_hyp_left : WF Γ Ω H → entails Γ K p → entails Γ (K ⋀ H) p :=
+  λ wfH entp, by refine cut K (and_left (axm _)) entp; WF_prover
+
 lemma hyp_and_iff_imp : entails Γ (p ⋀ q) r ↔ entails Γ p (q ⟹ r) := ⟨and_to_imp, imp_to_and⟩
 
 lemma ent_to_meta_imp : entails Γ p q → entails Γ H p → entails Γ H q :=
@@ -163,9 +169,9 @@ end
 lemma is_star {wfH : WF Γ Ω H} (s : term) {wfs : WF Γ 𝟙 s} : entails Γ H (s ≃[𝟙] ⁎) :=
   by refine (add_hyp wfH $ all_to_spec (↑0 ≃[𝟙] ⁎) (closed_weakening star_unique)); WF_prover 
 
-lemma elem_iff_spec {A} {wfH : WF Γ Ω H} {wfφ : WF (A::Γ) Ω φ} : entails Γ ⊤ (∀' A $ (↑0 ∈ ^(⟦A | φ⟧)) ⇔ φ) := comp wfφ
+lemma elem_iff_spec {A} {wfH : WF Γ Ω H} {wfφ : WF (A::Γ) Ω φ} : entails Γ ⊤ (∀' A $ (↑0 ∈[A] ^(⟦A | φ⟧)) ⇔ φ) := comp wfφ
 
-lemma eq_elem {A} (a₁ a₂ α) {wfα : WF Γ (𝒫 A) α} (ent_eq : entails Γ H (a₁ ≃[A] a₂)) : entails Γ H (a₁ ∈ α) ↔ entails Γ H (a₂ ∈ α) :=
+lemma eq_elem {A} (a₁ a₂ α) {wfα : WF Γ (𝒫 A) α} (ent_eq : entails Γ H (a₁ ≃[A] a₂)) : entails Γ H (a₁ ∈[A] α) ↔ entails Γ H (a₂ ∈[A] α) :=
   by convert to_meta_iff (all_to_spec _ ent_eq); simp <|> WF_prover
 
 lemma eq_sub {A} (a₁ a₂ φ) (ent_eq : entails Γ H (a₁ ≃[A] a₂)) (wfφ : WF (A::Γ) Ω φ) : entails Γ H (φ⁅a₁⁆) ↔ entails Γ H (φ⁅a₂⁆) :=
@@ -174,7 +180,7 @@ begin
   apply eq_elem; WF_prover
 end
 
-lemma intro_eq {wfH : WF Γ Ω H} {A} {α₁ α₂} {wfα₁ : WF Γ (𝒫 A) α₁} {wfα₂ : WF Γ (𝒫 A) α₂} : entails Γ H (∀' A ((↑0 ∈ ^α₁) ⇔ (↑0 ∈ ^α₂))) → entails Γ H (α₁ ≃[𝒫 A] α₂) :=
+lemma intro_eq {wfH : WF Γ Ω H} {A} {α₁ α₂} {wfα₁ : WF Γ (𝒫 A) α₁} {wfα₂ : WF Γ (𝒫 A) α₂} : entails Γ H (∀' A ((↑0 ∈[A] ^α₁) ⇔ (↑0 ∈[A] ^α₂))) → entails Γ H (α₁ ≃[𝒫 A] α₂) :=
   to_meta_imp (add_hyp wfH (by { convert all_to_spec _ (all_to_spec _ (closed_weakening extensionality)), any_goals {simp}, all_goals {WF_prover}}))
 
 lemma prop_eq_iff {wfH : WF Γ Ω H} {φ ψ} {wfφ : WF Γ Ω φ} {wfψ : WF Γ Ω ψ} : entails Γ H (φ ⇔ ψ) ↔ entails Γ H (φ ≃[Ω] ψ) :=
@@ -186,22 +192,18 @@ begin
       convert (eq_sub φ ψ ((^φ) ⇔ ↑0) ent_eq _).1, simp, tidy, refine a iff_refl, all_goals {WF_prover; refl} }
 end
 
-lemma eq_elim_elems {A} {α₁ α₂} {a} {wfa : WF Γ A a} {ent_eq : entails Γ H (α₁ ≃[𝒫 A] α₂)} : entails Γ H (a ∈ α₁) ↔ entails Γ H (a ∈ α₂) :=
-  by {convert eq_sub α₁ α₂ (^a ∈ ↑0) ent_eq _, simp, simp, WF_prover; refl}
+lemma eq_elim_elems {A} {α₁ α₂} {a} {wfa : WF Γ A a} {ent_eq : entails Γ H (α₁ ≃[𝒫 A] α₂)} : entails Γ H (a ∈[A] α₁) ↔ entails Γ H (a ∈[A] α₂) :=
+  by {convert eq_sub α₁ α₂ (^a ∈[A] ↑0) ent_eq _, simp, simp, WF_prover, apply WF.lift_once, assumption}
 
 lemma elem_product {d A B} {wfH : WF Γ Ω H} : WF Γ (A 𝕏 B) d → entails Γ H (∃[A,B] $ (^(^d)) ≃[A 𝕏 B] ⟪↑1,↑0⟫) :=
 λ wfd, add_hyp wfH (by {convert (all_to_spec _ (closed_weakening pair_rep)); WF_prover})
 
-lemma bi_exists_of_bi_var {A} : entails (A::Γ) (^p) q → entails Γ (∃' A p) (∃' A q) :=
+
+
+lemma ex_ent_ex_of_var {A} : entails (A::Γ) p q → entails Γ (∃' A p) (∃' A q) :=
 begin
   intro entpq,
-  apply ex_intro,
-  apply cut (^ (∀' A q)),
-  apply ex_elim,
-  apply all_intro,
-  apply ex_intro,
-  
-  
+  refine ex_intro (cut q entpq (ex_elim (axm _))); WF_prover
 end
 
 end entails
