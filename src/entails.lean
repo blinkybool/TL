@@ -35,9 +35,8 @@ begin
         { apply_rules [and_intro, vac, axm]; WF_prover},
         { exact imp_to_and ent } },
     { intro ent,
-      cases (WF.entails_terms ent) with wfp wfq,
-      apply_rules [and_to_imp, cut p],
-      refine and_right (axm _); WF_prover }
+      apply and_to_imp, apply cut p, 
+      refine and_right (axm _); WF_prover, tidy }
 end
 
 lemma to_meta_imp : entails Γ H (p ⟹ q) → entails Γ H p → entails Γ H q :=
@@ -60,7 +59,7 @@ begin
   intro ent_iff,
   split, apply to_meta_imp,
   apply cut _ (vac _),
-  exact and_left ent_iff, exact and_right ent_iff, 
+  exact and_left ent_iff; WF_prover, exact and_right ent_iff, 
 end
 
 lemma meta_and : entails Γ H (p ⋀ q) ↔ (entails Γ H p ∧ entails Γ H q) :=
@@ -192,13 +191,9 @@ lemma eq_elim_elems {A} {α₁ α₂} {a} {wfa : WF Γ A a} {ent_eq : entails Γ
 lemma elem_product {d A B} {wfH : WF Γ Ω H} : WF Γ (A 𝕏 B) d → entails Γ H (∃[A,B] $ (^(^d)) ≃[A 𝕏 B] ⟪↑1,↑0⟫) :=
 λ wfd, add_hyp wfH (by {convert (all_to_spec _ (closed_weakening pair_rep)); WF_prover})
 
-lemma bi_exists_of_bi_var {A} : entails (A::Γ) (^p) q → entails Γ (∃' A p) (∃' A q) :=
+lemma bi_exists_of_bi_var {A P Q} : entails (A::Γ) P Q → entails Γ (∃' A p) (∃' A q) :=
 begin
   intro entpq,
-  apply ex_intro,
-  apply cut (^ (∀' A q)),
-  apply ex_elim,
-  apply all_intro,
   apply ex_intro,
   
   

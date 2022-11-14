@@ -6,6 +6,7 @@ Author: Billy Price
 import data.finset
 import tactic.induction
 import tactic.tidy
+import tactic.linarith
 namespace TT
 
 inductive type : Type

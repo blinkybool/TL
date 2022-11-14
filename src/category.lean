@@ -132,6 +132,7 @@ end
 /-! ### composition -/
 
 section
+  open term
 
   variables {A B C D : type}
   variable {α : tset A}
